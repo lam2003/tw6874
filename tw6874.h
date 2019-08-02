@@ -28,18 +28,18 @@
 void TW6874_Init(void);
 
 u8 get_TW6874_SLAVE_ID0(void);
-void TW6874_Ch(U8 , U8);
+void TW6874_Ch(U8, U8);
 U8 ReadTW6874(WORD);
 
 void SetSignalTW6874(WORD, BYTE, BYTE);
 U8 ReadTW6874(WORD);
 void assert_reset_TW6874(void);
-void clk_phase(U8 , U8 );
-U8 SDI_locked( U8 );
-U8 CRC_error( U8 );
+void clk_phase(U8, U8);
+U8 SDI_locked(U8);
+U8 CRC_error(U8);
 void reset_WC_SDI1(void);
 u8 check_tw6874_input_source(u8 ch);
-void set_dirac_func( U8 ch, U8 res, U8 mode );
+void set_dirac_func(U8 ch, U8 res, U8 mode);
 void AocSet(WORD chs);
 void CrcCount(WORD channels);
 
@@ -56,7 +56,6 @@ void lock_auto(U8 ch);
 //void lock_auto_sd(U8 ch, U8 long_offset, U8 short_offset);
 U8 lock_check(U8 ch, U8 aoc, U8 agc);
 
-
 void SetAudioCh(U8 InCh, U8 InMode, U8 OutCh);
 void ReadANC(U8 ch, U8 pos, U8 did, U16 line);
 
@@ -71,7 +70,7 @@ extern unsigned char bAutoEQlock;
 extern U8 DiracAutoFlag;
 extern U8 bAutoCh[4];
 //extern unsigned char bAutoVOctrl;
-extern U8  DiracInput[4];
+extern U8 DiracInput[4];
 //extern U8 CLen;
 //extern short calibratedAOC[5];
 extern U16 minErr[5];
@@ -82,10 +81,8 @@ extern U8 ForceDisplay;
 extern U8 right_audio_chan;
 
 #define Printf printk
-#define Delay(x) msleep(x/5)
+#define Delay(x) msleep(x / 5)
 
 //#define DEBUG_PRINT
 
-
-#endif	//... __TW6874_H__
-
+#endif //... __TW6874_H__
