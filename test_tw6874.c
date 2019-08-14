@@ -56,6 +56,8 @@ int main()
 		temp = 1; //chn number
 		ioctl(tw6874_2, CMD_CHECK_ADN_LOCK_SDI, &temp);
 		printf("dev:%d chn:%d CMD_HANDLE_CHN_CHANGE ok,chn format: %d .\n", 2, 1, temp);
+
+		sleep(1);
 	}
 
 	close(tw6874_1);

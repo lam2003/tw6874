@@ -1275,6 +1275,7 @@ void CheckChLock(U8 ch)
 
 //	Printf("\n\r: ************lockCnt = %2x channel %2x",(WORD)lockCnt, (WORD)ch);
 //	if((lockCnt>=LOCK_PER_TH)&&(minErr[ch]==0)){
+	Printf("11111 chn:%d,lockCnt:%d\n",ch,lockCnt);
 #ifdef CRC_ENABLE
 	val = CheckChCrc(ch, 150);
 	if ((lockCnt >= LOOP_COUNT) && (minErr[ch] == 0) && ((val < 8) || (val == 0x200)))
@@ -1287,6 +1288,10 @@ void CheckChLock(U8 ch)
 	}
 	else
 	{
+
+		if(minErr[ch] == 0 || lockCnt == 0)
+			return;
+		Printf("11111 auto lock####################\n");
 		lock_auto(ch);
 		//		lock_test(ch);
 	}

@@ -16,6 +16,8 @@ PWD := $(shell pwd)
 modules:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) LDDINC=$(PWD)/../include modules
 	$(CC) test_tw6874.c -o test_tw6874
+	cp ./*.ko /nfs/
+	cp ./test_tw6874 /nfs/
 clean:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) LDDINC=$(PWD)/../include clean
 endif

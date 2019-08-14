@@ -1,0 +1,9 @@
+*.cmd
+*.o
+*.mod.c
+*.ko
+*.order
+*.symvers
+test_tw6874
+.vscode
+.tmp_versions
