@@ -626,7 +626,7 @@ U8 check_tw6874_input_source(u8 ch)
 	if (val == 0)
 	{
 		if ((DiracAutoFlag) && ((DiracInput[ch] != 0) || ((ReadTW6874(0x054) >> ch) & 1)))
-		{   //if dirac was enabled, disable it;
+		{ //if dirac was enabled, disable it;
 			//Printf("\n\r: unplugged, disable dirac ...");
 			switch (ch)
 			{
@@ -1166,7 +1166,7 @@ U16 CheckChCrc(U8 ch, U16 period) //, U8 addr, U8 range, U8 type)
 
 	errCnt = 0;
 	for (kk = 0; kk < period; kk++)
-	{   // To fine tune this number.
+	{ // To fine tune this number.
 		//	for (kk=0; kk<750; kk++) {	// To fine tune this number.
 
 		Delay(5);
@@ -1231,7 +1231,7 @@ U8 ANCDetection(U8 ch, U8 did)
 	//	Printf("\n\r: polling .");
 	//note: this loop is about 1 frame time in EVB in delay; May be different on other platform.
 	for (ii = 0; ii < 5; ii++)
-	{   //try polling here first;
+	{ //try polling here first;
 		//		if(ii%20 == 0) Printf(".");
 		val = ReadTW6874(0x821 + ((U16)ch << 8));
 		//		Printf("\n\r:0x821 returned %2x", (WORD)val);
@@ -1271,10 +1271,10 @@ void CheckChLock(U8 ch)
 		lockCnt += ((val >> 6) & 1) & ((val >> 2) & 1);
 		//		Delay(LOCK_DELAY);
 	}
-//	lockCnt = (U16)lockCnt*100/LOOP_CNT;
+	//	lockCnt = (U16)lockCnt*100/LOOP_CNT;
 
-//	Printf("\n\r: ************lockCnt = %2x channel %2x",(WORD)lockCnt, (WORD)ch);
-//	if((lockCnt>=LOCK_PER_TH)&&(minErr[ch]==0)){
+	//	Printf("\n\r: ************lockCnt = %2x channel %2x",(WORD)lockCnt, (WORD)ch);
+	//	if((lockCnt>=LOCK_PER_TH)&&(minErr[ch]==0)){
 	Printf("22222 chn:%d,lockCnt:%d\n", ch, lockCnt);
 #ifdef CRC_ENABLE
 	val = CheckChCrc(ch, 150);
@@ -1289,7 +1289,7 @@ void CheckChLock(U8 ch)
 	else
 	{
 
-		if(lockCnt == 0)
+		if (lockCnt == 0)
 			return;
 		Printf("22222 auto lock####################\n");
 		lock_auto(ch);
@@ -1449,7 +1449,7 @@ void crc_auto(U8 ch, U8 mode, U8 aocI, U8 agcI, U8 stepI, U16 period)
 
 			aocHist[jj] = 0;
 			for (ii = 0; ii < 5; ii++)
-			{   //agc;
+			{ //agc;
 				//			if(ii==4)
 				//				agct=0xff;
 				//			else
@@ -2652,7 +2652,7 @@ void lock_auto(U8 ch)
 		Printf("\n\r status = %2x, DiracAutoFlag = %2x", (WORD)val, (WORD)DiracAutoFlag);
 #endif
 		if (((val & 0x3) == 0x01))
-		{   // if it's SD, treat it as Dirac when it's dirac auto mode;
+		{ // if it's SD, treat it as Dirac when it's dirac auto mode;
 			//			Printf("\n\r (agc&0x7f)*3 = %4x", (WORD)((agc&0x7f)*3));
 
 			{
@@ -2766,7 +2766,7 @@ void lock_auto(U8 ch)
 */
 		}
 		else if ((ReadTW6874(0x54) & (1 << ch)) != 0)
-		{   //Dirac enable bit not set;
+		{ //Dirac enable bit not set;
 			//	Printf("\n\r: SD un plugged %2x %2x %2x %2x", (WORD)channel, (WORD)std, (WORD)(DiracAutoFlag), (WORD)((ReadTW6874(0x54)&(1<<channel))));
 			DiracInput[ch] = 0;
 			/*
@@ -3076,7 +3076,7 @@ void ReadANC(U8 port, U8 pos, U8 did, U16 line)
 	//wait for ANC data
 	Printf("\n\r: polling .");
 	for (ii = 0; ii < 500; ii++)
-	{   //try polling here first;
+	{ //try polling here first;
 		//		if(ii%20 == 0) Printf(".");
 		val = ReadTW6874(0x821 + ((U16)ch << 8));
 		//		if(((val&0x80)&&(pos==1))||((val&0x40)&&(pos==0))||((val&0xc0)&&(pos>1)))
@@ -3223,7 +3223,7 @@ U8 ReadANC_Data(U8 ch, U8 did, U8 did2)
 	///////////////////////////////////
 
 	for (ii = 0; ii < 500; ii++)
-	{   //try polling here first to detect ANC packet;
+	{ //try polling here first to detect ANC packet;
 		//		if(ii%20 == 0) Printf(".");
 		val = ReadTW6874(0x821 + ((U16)ch << 8));
 		//		if(((val&0x80)&&(pos==1))||((val&0x40)&&(pos==0))||((val&0xc0)&&(pos>1)))
@@ -3259,7 +3259,7 @@ U8 ReadANC_Data(U8 ch, U8 did, U8 did2)
 */
 		//		if((rDc<51)&&(rDc>0)){
 		if ((rDc <= MAX_CAM1_ANC_LEN) && (rDc > 0) && (rDid == did) && (rSDid == did2))
-		{   //only read data out when did/sdid matches ones for RESOLUTION ANC packet;
+		{ //only read data out when did/sdid matches ones for RESOLUTION ANC packet;
 			// there might be one more byte added for software crc checking;
 			for (ii = 0; ii < rDc - 1; ii++)
 				Printf("%c ", (WORD)ReadTW6874(0xc00 + ((U16)ch << 9) + (ii << 1)));
@@ -3289,7 +3289,7 @@ U8 ReadANC_Resolution(U8 ch)
 	SetSignalTW6874(0x804 + ((U16)ch << 8), 0x70, 0);
 	ReadANC_On(ch, 0x80, 0x0);
 	for (ii = 0; ii < 500; ii++)
-	{   //try polling here first;
+	{ //try polling here first;
 		//		if(ii%20 == 0) Printf(".");
 		val = ReadTW6874(0x821 + ((U16)ch << 8));
 		//		if(((val&0x80)&&(pos==1))||((val&0x40)&&(pos==0))||((val&0xc0)&&(pos>1)))
