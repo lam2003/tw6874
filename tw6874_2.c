@@ -51,10 +51,7 @@ void Ms_Delay(U16 t)
 	Delay(5 * t);
 }
 //==================================================================================
-//u8 chlockcnt[4], chformat[4], chformatcnt[4];
-//U8 chMode[4], chAGC[4];
-//short calibratedAOC[5];
-
+//range 高位到低位的范围设置数值 例如0x77即设置第七位
 void SetSignalI2C(U8 slave, U16 index, U8 range, U8 val)
 {
 	U8 mask = 0;
@@ -1134,61 +1131,68 @@ void set_dirac_func(U8 ch, U8 res, U8 mode)
 }
 
 ////////////////////////////////////////////////////////////////
-// static U16 err_thre = 0;
-//static U16 goodAGC;
-
-//static U16 unlock[4] = {0,0,0,0};
-
-U16 CheckChCrc(U8 ch, U16 period) //, U8 addr, U8 range, U8 type)
+//CheckChCrc 对输入信号格式CRC校验
+//@param ch 通道编号
+//@oaram period 校验次数
+U16 CheckChCrc(U8 ch, U16 period)
 {
 	U16 kk, val, err, errCnt;
 	U8 range, type;
 
 	range = ((4 + ch) << 4) + (4 + ch);
 	val = ReadTW6874(ch << 1);
-	if ((val & 0x44) != 0x44) // Not locked. Return big value.
+	//signal locked发生变化,直接返回大数值(检验失败)
+	if ((val & 0x44) != 0x44)
 		return 0x7F00;
 	type = val & 0x03;
 
-	// Clear CRC Counter
+	//清空CRC校验计数器
 	if ((type) == 1)
-	{ // SD
+	{
+		//标清
 		SetSignalTW6874(0x038, range, 1);
 		SetSignalTW6874(0x038, range, 0);
 	}
 	else
-	{ // HD
+	{
+		//高清
 		SetSignalTW6874(0x039, 0x70, 0xFF);
 		SetSignalTW6874(0x039, 0x70, 0x00);
 	}
-	// Turn on CRC counter
+
+	//开启CRC校验计数器
 	SetSignalTW6874(0x039, range, 1);
 
 	errCnt = 0;
 	for (kk = 0; kk < period; kk++)
-	{ // To fine tune this number.
-		//	for (kk=0; kk<750; kk++) {	// To fine tune this number.
-
-		Delay(5);
+	{
+		Delay(10);
 		val = ReadTW6874(ch << 1);
-		if ((val & 0x44) != 0x44) // Not locked
+		//signal locked发生变化,直接返回大数值(检验失败)
+		if ((val & 0x44) != 0x44)
 			return 0x7F00;
-		if ((val & 0x03) != type) // type changing
+
+		//类型发生变化,例如HD变成SD,直接返回大数值(检验失败)
+		if ((val & 0x03) != type)
 			return 0x7F00;
 		errCnt += (val & 0x10) >> 4;
 	}
-	SetSignalTW6874(0x039, range, 0); // Stop CRC counter
+	//停止CRC校验计数器
+	SetSignalTW6874(0x039, range, 0);
+
+	//获得错误次数
 	err = ReadTW6874(0x40 + ch);
 
-	//Printf("\n\r(checkchcrc): err=%4x;  errCnt=%4x",(WORD)err, (WORD)errCnt);
+	//CRC OK
 	if ((errCnt == 0) && (err == 0))
 		return 0;
 
 	val = (err > errCnt ? err : errCnt);
+
+	//NOT REACH HERE
 	if (err == 0xff)
 		val = err + errCnt;
 	else if ((err == 0) && (errCnt > 0))
-		// val = 0x7e00;
 		val = 0x200;
 
 	return val;
@@ -1261,40 +1265,43 @@ U8 ANCDetection(U8 ch, U8 did)
 
 void CheckChLock(U8 ch)
 {
-	U16 val, lockCnt, kk;
-	//	U8 agc;
+	U16 val;
 
-	lockCnt = 0;
+	U16 kk, lockCnt = 0;
 	for (kk = 0; kk < (LOOP_COUNT << 1); kk++)
 	{
+		Delay(10);
 		val = ReadTW6874(ch << 1);
 		lockCnt += ((val >> 6) & 1) & ((val >> 2) & 1);
-		//		Delay(LOCK_DELAY);
 	}
-	//	lockCnt = (U16)lockCnt*100/LOOP_CNT;
 
-	//	Printf("\n\r: ************lockCnt = %2x channel %2x",(WORD)lockCnt, (WORD)ch);
-	//	if((lockCnt>=LOCK_PER_TH)&&(minErr[ch]==0)){
-	Printf("22222 chn:%d,lockCnt:%d\n", ch, lockCnt);
+	if (lockCnt < 10)
+	{
+		//认为无信号,直接返回
+		return;
+	}
+	else if ((lockCnt < 40) || (minErr[ch] != 0))
+	{
+		//锁定次数小于50%或状态发生变化，增益
+		printk("*****2_%d_lock_auto,lockCnt:%d\n", ch, lockCnt);
+		lock_auto(ch);
+		return;
+	}
+
 #ifdef CRC_ENABLE
 	val = CheckChCrc(ch, 150);
-	if ((lockCnt >= LOOP_COUNT) && (minErr[ch] == 0) && ((val < 8) || (val == 0x200)))
+	if ((val < 8) || (val == 0x200))
 	{
-#else
-	if ((lockCnt >= LOOP_COUNT) && (minErr[ch] == 0))
-	{
-#endif
+		//CRC错误次数小于8,如果逐行/交错有所变化,也认为信号稳定
 		return;
 	}
 	else
 	{
-
-		if (lockCnt == 0)
-			return;
-		Printf("22222 auto lock####################\n");
+		printk("#####2_%d_lock_auto\n", ch);
 		lock_auto(ch);
-		//		lock_test(ch);
+		return;
 	}
+#endif
 }
 
 void crc_check25(U8 ch, U8 aoc, U8 agc, U8 step)
@@ -1604,6 +1611,8 @@ void crc_auto(U8 ch, U8 mode, U8 aocI, U8 agcI, U8 stepI, U16 period)
 	//	return 1;
 }
 ///////////////////////////////////////////////////////
+//信号增益
+//@param ch 通道编号
 void lock_auto(U8 ch)
 {
 	U16 val, ii, jj, kk, agc, aoc, agct, aoct, bothLock;
@@ -1615,23 +1624,21 @@ void lock_auto(U8 ch)
 #ifdef DIRAC_SUPPORT
 	U8 lenVc2Aoc, startVc2Aoc;
 #endif
-	//	U16 agcHist[6];
-	//	U8 lockGrid[26];
 
-	// turn off video output and audio first if signal is not good;
-	SetSignalTW6874(0x044 + (ch << 1), 0x77, 0); // turn off output during calibration;
-
-	SetSignalTW6874(0x3c, (ch << 4) | ch, 0x0); // turn off audio ANC detection;
-
-	//////////check if video un-plugged///////////////
-
+	//关闭视频输出
+	SetSignalTW6874(0x044 + (ch << 1), 0x77, 0);
+	//关闭音频ANC
+	SetSignalTW6874(0x3c, (ch << 4) | ch, 0x0);
+	//检查视频线是被未插入
 	noCrc = 1;
 	maxLock = 0;
 	for (jj = 2; jj < 9; jj += 2)
-	{ //aoc;
+	{
+		//AOC
 		SetSignalTW6874(0x385 + (ch << 4), 0x70, 0x80 + (jj << 4));
 		for (ii = 2; ii < 9; ii += 2)
-		{ //agc;
+		{
+			//AGC
 			SetSignalTW6874(0x383 + (ch << 4), 0x70, 0x80 + (ii << 4));
 			Delay(15);
 
@@ -1897,7 +1904,7 @@ void lock_auto(U8 ch)
 		Printf("\n\r step=%2x, aoc=%2x, agc=%2x", (WORD)step, (WORD)aoc, (WORD)agc);
 #endif
 		if (val > 0)
-		{ //crc error>0 for current settings;
+		{
 			SetSignalTW6874(0x382 + (ch << 4), 0x74, 9);
 			switch (ch)
 			{
@@ -1937,68 +1944,24 @@ void lock_auto(U8 ch)
 			}
 		}
 
-		//		SetSignalTW6874( 0x044 + (ch<<1), 0x77, 1 );	Printf("\n\r display turned on");	// turn on output after calibration;
-
-		// set audio and display
 		if (val < 0x20)
-		{					  // set audio if CRC error not too bad;
-			ForceDisplay = 1; //force display configuration; only used for Intersil evb;
+		{
 			if ((ReadTW6874(ch << 1) & 3) != 1)
-			{ //HD case
+			{
+				//HD case
 				DiracInput[ch] = 0;
-				/*
-			switch(ch){
-			case 0:
-				set_dirac_func( 1, 8, ReadTW6874(0x83) );
-				break;
-			case 1:
-				set_dirac_func( 2, 8, ReadTW6874(0x89) );
-				break;
-			case 2:
-				set_dirac_func( 3, 8, ReadTW6874(0x93) );
-				break;
-			case 3:
-				set_dirac_func( 4, 8, ReadTW6874(0x99) );
-				break;
-			}	
-		 */
-				SetAudioCh(ch + 1 + ((right_audio_chan >> ch) & 1) * 4, 1, 0); // loop left or right channel from the port to DAC output depending on RIGHT_ACHAN setting;
-																			   //			Printf("\n\r set audio %2x, %2x, %2x", (WORD)(ch+1), (WORD)1, (WORD)0);
 			}
 			else
 			{
 
 				if (DiracAutoFlag)
 					DiracInput[ch] = 1;
-				/*
-			else{
-				switch(ch){
-				case 0:
-					set_dirac_func( 1, 8, ReadTW6874(0x83) );
-					break;
-				case 1:
-					set_dirac_func( 2, 8, ReadTW6874(0x89) );
-					break;
-				case 2:
-					set_dirac_func( 3, 8, ReadTW6874(0x93) );
-					break;
-				case 3:
-					set_dirac_func( 4, 8, ReadTW6874(0x99) );
-					break;
-				}		
-			}
-			*/
-				SetAudioCh(ch + 1 + ((right_audio_chan >> ch) & 1) * 4, 0, 0); // loop left or right channel from the port to DAC output depending on RIGHT_ACHAN setting;
-																			   //			Printf("\n\r set audio %2x, %2x, %2x", (WORD)(ch+1), (WORD)0, (WORD)0);
 			}
 		}
-		else
-			Printf("\n\r: audio not turned on because of poor connection");
-		//////////////////
 
 		minErr[ch] = 0;
 		return;
-	} //end of	if(noCrc==0){
+	}
 #endif
 //////////////
 #endif
