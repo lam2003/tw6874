@@ -1275,15 +1275,19 @@ void CheckChLock(U8 ch)
 		lockCnt += ((val >> 6) & 1) & ((val >> 2) & 1);
 	}
 
-	if (lockCnt == 0)
+	if (lockCnt < 5)
 	{
 		//认为无信号,直接返回
+		return;
+	}
+	else if (lockCnt == (LOOP_COUNT << 1))
+	{
 		return;
 	}
 	else if ((lockCnt < 40) || (minErr[ch] != 0))
 	{
 		//锁定次数小于50%或状态发生变化，增益
-		printk("1_%d_lock_auto\n", ch);
+		printk("stepONE_1_%d_lock_auto,lockCnt:%d\n", ch, lockCnt);
 		lock_auto(ch);
 		return;
 	}
@@ -1297,7 +1301,7 @@ void CheckChLock(U8 ch)
 	}
 	else
 	{
-		printk("1_%d_lock_auto\n", ch);
+		printk("stepTWO_1_%d_lock_auto\n", ch);
 		lock_auto(ch);
 		return;
 	}
@@ -2910,62 +2914,20 @@ void lock_auto(U8 ch)
 
 	// set audio and display
 	if (val < 0x20)
-	{					  //make sure connection is good enough before turn on audio;
-		ForceDisplay = 1; //force display configuration; only used for Intersil evb;
+	{
+		ForceDisplay = 1;
 		if ((ReadTW6874(ch << 1) & 3) != 1)
-		{ //HD case
+		{
+			//HD case
 			DiracInput[ch] = 0;
-			/*
-			switch(ch){
-			case 0:
-				set_dirac_func( 1, 8, ReadTW6874(0x83) );
-				break;
-			case 1:
-				set_dirac_func( 2, 8, ReadTW6874(0x89) );
-				break;
-			case 2:
-				set_dirac_func( 3, 8, ReadTW6874(0x93) );
-				break;
-			case 3:
-				set_dirac_func( 4, 8, ReadTW6874(0x99) );
-				break;
-			}
-		*/
-			SetAudioCh(ch + 1 + ((right_audio_chan >> ch) & 1) * 4, 1, 0); // loop left or right channel from the port to DAC output depending on RIGHT_ACHAN setting;
-																		   //			Printf("\n\r set audio %2x, %2x, %2x", (WORD)(ch+1), (WORD)1, (WORD)0);
 		}
 		else
 		{
 
 			if (DiracAutoFlag)
 				DiracInput[ch] = 1;
-			/*
-			else{
-				switch(ch){
-				case 0:
-					set_dirac_func( 1, 8, ReadTW6874(0x83) );
-					break;
-				case 1:
-					set_dirac_func( 2, 8, ReadTW6874(0x89) );
-					break;
-				case 2:
-					set_dirac_func( 3, 8, ReadTW6874(0x93) );
-					break;
-				case 3:
-					set_dirac_func( 4, 8, ReadTW6874(0x99) );
-					break;
-				}		
-			}
-		*/
-			SetAudioCh(ch + 1 + ((right_audio_chan >> ch) & 1) * 4, 0, 0); // loop left or right channel from the port to DAC output depending on RIGHT_ACHAN setting;
-																		   //			Printf("\n\r set audio %2x, %2x, %2x", (WORD)(ch+1), (WORD)0, (WORD)0);
 		}
 	}
-	else
-		Printf("\n\r: audio not turned on because of poor connection");
-	//////////////////
-
-	//	return 1;
 }
 #endif
 
